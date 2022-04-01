@@ -47,7 +47,8 @@ def create_dataset(windows_and_labels):
     for img_windows, img_labels in windows_and_labels:
         img_labels = img_labels.flatten()
         for img_window, img_label in zip(img_windows, img_labels):
-            X.append(img_window)
+            #  potentially add window transformation here
+            X.append(img_window.flatten())
             y.append(img_label)
     
     return np.array(X), np.array(y)
