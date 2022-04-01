@@ -53,18 +53,24 @@ def create_dataset(windows_and_labels):
     return np.array(X), np.array(y)
 
 
-if __name__ == '__main__':
-    images = read_images('../images/CHASE/img')
-    rgb_images = convert_images_to_rgb(images)
-
-    green_images = select_channel(rgb_images, 1)
-
-    labels = read_labels('../images/CHASE/labels')
-
-    windowed_images = np.array([create_sliding_window(img, (5, 5)) for img in green_images])
+def create_dataset_from_directory(dir: str, channel=1, window_shape=(5, 5), pad=True, padding=(2, 2)) -> tuple:
+    try:
+        images = read_images(f'{dir}/img')
+        labels = read_labels(f'{dir}/labels')
+    except:
+        raise Exception('Incorrect directory !')
     
-    windows_and_labels = zip(windowed_images, labels)
+    images = convert_images_to_rgb(images)
 
-    X, y = create_dataset(windows_and_labels)
+    one_channel_images = select_channel(images, channel)
+    images_windows = np.array([create_sliding_window(img, window_shape, pad, padding) for img in one_channel_images])
+
+    windows_and_labels = zip(images_windows, labels)
+
+    return create_dataset(windows_and_labels)
+
+
+if __name__ == '__main__':
+    X, y = create_dataset_from_directory(dir="../images/CHASE", channel=1, window_shape=(5, 5), pad=True, padding=(2, 2))
 
     print(X.shape, y.shape)
