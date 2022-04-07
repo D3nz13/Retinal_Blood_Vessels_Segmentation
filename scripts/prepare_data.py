@@ -20,6 +20,15 @@ def read_labels(dir: str) -> list:
     return all_labels
 
 
+def resize_images(images: list, shape: tuple) -> list:
+    try:
+        width, height = shape
+
+        return [cv2.resize(image, (width, height)) for image in images]
+    except:
+        raise Exception('Incorrect shape/input images.')
+
+
 def convert_images_to_rgb(images: list) -> np.ndarray:
     rgb_images = [cv2.cvtColor(bgr_image, cv2.COLOR_BGR2RGB) for bgr_image in images]
 
@@ -48,30 +57,52 @@ def create_dataset(windows_and_labels):
         img_labels = img_labels.flatten()
         for img_window, img_label in zip(img_windows, img_labels):
             #  potentially add window transformation here
-            X.append(img_window.flatten())
+            window_moments = cv2.moments(img_window, binaryImage=False)
+            hu_moments = cv2.HuMoments(window_moments)
+            variable = np.hstack((img_window.flatten(), hu_moments.flatten()))
+
+            X.append(variable)
             y.append(img_label)
     
     return np.array(X), np.array(y)
 
 
-def create_dataset_from_directory(dir: str, channel=1, window_shape=(5, 5), pad=True, padding=(2, 2)) -> tuple:
+def create_dataset_from_directory(dir: str, channel=1, shape=None, window_shape=(5, 5), pad=True, padding=(2, 2)) -> tuple:
     try:
         images = read_images(f'{dir}/img')
-        labels = read_labels(f'{dir}/labels')
+        masks = read_labels(f'{dir}/mask')
+        n_images = len(images)
     except:
         raise Exception('Incorrect directory !')
     
+    if shape:
+        if isinstance(shape, tuple):
+            images = resize_images(images, shape)
+        else:
+            raise Exception('Shape must be a tuple of ints.')
+
     images = convert_images_to_rgb(images)
 
     one_channel_images = select_channel(images, channel)
-    images_windows = np.array([create_sliding_window(img, window_shape, pad, padding) for img in one_channel_images])
 
-    windows_and_labels = zip(images_windows, labels)
+    X, y = [], []
 
-    return create_dataset(windows_and_labels)
+    for i, (img, mask) in enumerate(zip(one_channel_images, masks), start=1):
+        print(f"Image {i}/{n_images}")
+        mask = mask.flatten()
+        img_windows = create_sliding_window(img, window_shape, pad, padding)
+        for img_window, window_mask in zip(img_windows, mask):
+            window_moments = cv2.moments(img_window, binaryImage=False)
+            hu_moments = cv2.HuMoments(window_moments)
+            variable = np.hstack((img_window.flatten(), hu_moments.flatten()))
+
+            X.append(variable)
+            y.append(window_mask)
+    
+    return np.array(X), np.array(y)
 
 
 if __name__ == '__main__':
-    X, y = create_dataset_from_directory(dir="../images/CHASE", channel=1, window_shape=(5, 5), pad=True, padding=(2, 2))
+    X_train, y_train = create_dataset_from_directory(dir="../images/train", channel=1, shape=(246, 256), window_shape=(5, 5), pad=True, padding=(2, 2))
 
-    print(X.shape, y.shape)
+    print(X_train.shape, y_train.shape)
