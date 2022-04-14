@@ -102,7 +102,28 @@ def create_dataset_from_directory(dir: str, channel=1, shape=None, window_shape=
     return np.array(X), np.array(y)
 
 
-if __name__ == '__main__':
-    X_train, y_train = create_dataset_from_directory(dir="../images/train", channel=1, shape=(246, 256), window_shape=(5, 5), pad=True, padding=(2, 2))
+def crop_images(source_dir: str, destination_dir: str) -> None:
+    """Crops images to (960, 960) shape
 
-    print(X_train.shape, y_train.shape)
+    Args:
+        source_dir (str): directory with images
+        destination_dir (str): directory where the cropped images will be saved
+    """
+    image_names = os.listdir(source_dir)
+
+    for img_name in image_names:
+        img = cv2.imread(f"{source_dir}/{img_name}")
+        cropped = img[:, 20:-19]
+        cv2.imwrite(f"{destination_dir}/{img_name}", cropped)
+
+        print(f"Image {img_name} successfully cropped and saved.")
+
+if __name__ == '__main__':
+    # X_train, y_train = create_dataset_from_directory(dir="../images/train", channel=1, shape=(246, 256), window_shape=(5, 5), pad=True, padding=(2, 2))
+
+    # print(X_train.shape, y_train.shape)
+
+    crop_images(source_dir="../images/train/img", destination_dir="../cropped_images/train/img")
+    crop_images(source_dir="../images/train/mask", destination_dir="../cropped_images/train/mask")
+    crop_images(source_dir="../images/test/img", destination_dir="../cropped_images/test/img")
+    crop_images(source_dir="../images/test/mask", destination_dir="../cropped_images/test/mask")
