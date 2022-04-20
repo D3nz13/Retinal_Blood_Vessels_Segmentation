@@ -87,7 +87,7 @@ def create_dataset(windows_and_labels):
     return np.array(X), np.array(y)
 
 
-def create_dataset_from_directory(dir: str, channel=1, shape=None, window_shape=(5, 5), pad=True, padding=(2, 2), sample_size=5000) -> tuple:
+def create_dataset_from_directory(dir: str, channel=1, shape=None, window_shape=(5, 5), pad=True, padding=(2, 2), sample_size=5000, seed=42) -> tuple:
     try:
         images = read_images(f'{dir}/img')
         masks = read_labels(f'{dir}/mask')
@@ -100,7 +100,8 @@ def create_dataset_from_directory(dir: str, channel=1, shape=None, window_shape=
             images = resize_images(images, shape)
         else:
             raise Exception('Shape must be a tuple of ints.')
-
+    
+    random.seed(seed)
 
     X, y = [], []
 
