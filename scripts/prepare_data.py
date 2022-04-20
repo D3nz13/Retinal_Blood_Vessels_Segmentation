@@ -70,23 +70,6 @@ def get_stats(window: np.ndarray) -> np.ndarray:
     return np.hstack([mean, std, moments, hu]).flatten()
 
 
-def create_dataset(windows_and_labels):
-    X = []
-    y = []
-
-    for img_windows, img_labels in windows_and_labels:
-        img_labels = img_labels.flatten()
-        for img_window, img_label in zip(img_windows, img_labels):
-            window_moments = cv2.moments(img_window, binaryImage=False)
-            hu_moments = cv2.HuMoments(window_moments)
-            variable = np.hstack((img_window.flatten(), hu_moments.flatten()))
-
-            X.append(variable)
-            y.append(img_label)
-    
-    return np.array(X), np.array(y)
-
-
 def create_dataset_from_directory(dir: str, channel=1, shape=None, window_shape=(5, 5), pad=True, padding=(2, 2), sample_size=5000, seed=42) -> tuple:
     try:
         images = read_images(f'{dir}/img')
