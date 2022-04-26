@@ -6,6 +6,9 @@ __pycache__/
 *.py[cod]
 *$py.class
 
+cropped_images/
+filtering_results/
+
 # C extensions
 *.so
 
