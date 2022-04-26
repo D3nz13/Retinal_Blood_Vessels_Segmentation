@@ -101,9 +101,8 @@ def create_dataset_from_directory(dir: str, channel=1, shape=None, window_shape=
 
         for img_window, window_mask in sampled:
             stats = get_stats(img_window)
-            variable = np.hstack((img_window.flatten(), stats))
 
-            X.append(variable)
+            X.append(stats)
             y.append(window_mask)
     
     return np.array(X), np.array(y)
