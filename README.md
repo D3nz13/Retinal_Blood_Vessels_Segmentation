@@ -136,6 +136,23 @@ train_mask_datagen_params = dict(rotation_range=90,
 )
 ```
 
+### Callbacks
+```python
+callbacks = [
+    ModelCheckpoint(filepath="../models/model-{epoch:02d}-{val_loss:.2f}.hdf5",
+                    monitor="val_loss",
+                    save_best_only=True),
+    EarlyStopping(monitor="val_loss",
+                  patience=10,
+                  restore_best_weights=True),
+    ReduceLROnPlateau(monitor="val_loss",
+                      factor=0.1,
+                      patience=5,
+                      verbose=1,
+                      min_lr=1e-6)
+]
+```
+
 ### Training
 ![](results/learning_curves.png)
 
