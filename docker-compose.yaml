@@ -1,6 +1,8 @@
 version: "1.0"
 services:
   jupyter-lab:
+    environment:
+      - PYTHONPATH=/dl_project/
     build: .
     ports:
       - "8888:8888"
