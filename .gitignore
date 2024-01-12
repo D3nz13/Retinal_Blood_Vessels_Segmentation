@@ -1,5 +1,6 @@
 cropped_images/
 models/
+cityscapes_data/
 
 # Byte-compiled / optimized / DLL files
 __pycache__/
