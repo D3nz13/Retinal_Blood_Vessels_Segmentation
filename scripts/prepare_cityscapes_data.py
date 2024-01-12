@@ -1,3 +1,4 @@
+from multiprocessing import Pool
 from pathlib import Path
 from typing import Dict, List, Tuple
 
@@ -28,7 +29,7 @@ def read_img(path: Path) -> Tuple[NDArray, NDArray]:
 def read_data(data_dir: Path) -> Tuple[List[NDArray], List[NDArray]]:
     all_img_names = data_dir.iterdir()
     img_and_masks = (read_img(f_path) for f_path in all_img_names)
-    imgs, masks = list(zip(*img_and_masks))
+    imgs, masks = zip(*img_and_masks)
 
     return imgs, masks
 
@@ -42,18 +43,50 @@ def encode_mask(mask: NDArray, mapping: Dict[Tuple[int, ...], int]) -> NDArray:
     return np.argmin(distances, axis=2)
 
 
+def save_image(img: NDArray, saving_path: Path, grayscale: bool = False) -> None:
+    if grayscale:
+        img = img.astype(np.uint8)
+    img_pil = Image.fromarray(img)
+    img_pil.save(saving_path)
+
+
+def preprocess_and_save_data(source_dir: Path, saving_dir: Path) -> None:
+    saving_dir.mkdir(parents=True, exist_ok=True)
+
+    all_images, all_masks = read_data(source_dir)
+
+    mapping = get_color_to_id_mapping(get_all_labels())
+    encoding_arguments = ((mask, mapping) for mask in all_masks)
+
+    with Pool() as p:
+        encoded_masks = p.starmap(encode_mask, encoding_arguments)
+
+    (saving_dir / "img").mkdir(exist_ok=True)
+    (saving_dir / "mask").mkdir(exist_ok=True)
+
+    image_saving_arguments = (
+        (img, saving_dir / f"img/{i}.png") for i, img in enumerate(all_images, start=1)
+    )
+    mask_saving_arguments = (
+        (mask, saving_dir / f"mask/{i}.png", True) for i, mask in enumerate(encoded_masks, start=1)
+    )
+
+    with Pool() as p:
+        p.starmap(save_image, image_saving_arguments)
+        p.starmap(save_image, mask_saving_arguments)
+
+
 if __name__ == "__main__":
-    from multiprocessing import Pool
     from time import time
 
     starting_time = time()
-    images, masks = read_data(Path("./cityscapes_data/train/dummy_folder/"))
+    preprocess_and_save_data(
+        Path("./cityscapes_data/train/dummy_folder/"), Path("./cityscapes_data_preprocessed/train/")
+    )
     print(time() - starting_time)
 
-    mapping = get_color_to_id_mapping(get_all_labels())
-
-    arguments = ((mask, mapping) for mask in masks)
     starting_time = time()
-    with Pool() as p:
-        encoded_masks = p.starmap(encode_mask, arguments)
+    preprocess_and_save_data(
+        Path("./cityscapes_data/val/dummy_folder/"), Path("./cityscapes_data_preprocessed/val/")
+    )
     print(time() - starting_time)
