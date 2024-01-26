@@ -1,7 +1,10 @@
 from dataclasses import dataclass
+from pathlib import Path
 from typing import List, Tuple
 
 WIDTH, HEIGHT = (256, 256)
+NUM_CLASSES = 29
+EVALUATION_DIR = Path("../results_json/cityscapes/")
 
 
 @dataclass

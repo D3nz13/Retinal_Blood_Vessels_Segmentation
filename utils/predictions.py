@@ -1,12 +1,16 @@
+import dataclasses as dc
+from collections import defaultdict
 from functools import lru_cache
+from json import dump
 from pathlib import Path
-from typing import Dict, Tuple
+from typing import Dict, List, Tuple
 
 import numpy as np
 import tensorflow as tf
 from keras.src.engine.functional import Functional
 from numpy.typing import NDArray
 
+from scripts.constants import EVALUATION_DIR, NUM_CLASSES
 from scripts.prepare_cityscapes_data import get_all_labels, get_color_to_id_mapping
 
 
@@ -94,3 +98,45 @@ def get_dataset_generators(
     val_set = zip(val_image_datagen, val_mask_generator)
 
     return train_set, val_set
+
+
+def calculate_tp_tn_fp_fn_for_class(y_pred_argmax, y_true_argmax, class_idx):
+    X_pred_argmax_class = y_pred_argmax == class_idx
+    y_true_argmax_class = y_true_argmax == class_idx
+
+    tp = np.sum(X_pred_argmax_class & y_true_argmax_class)
+    tn = np.sum(~X_pred_argmax_class & ~y_true_argmax_class)
+    fp = np.sum(X_pred_argmax_class & ~y_true_argmax_class)
+    fn = np.sum(~X_pred_argmax_class & y_true_argmax_class)
+
+    return np.array([tp, tn, fp, fn])
+
+
+@dc.dataclass
+class TpTnFpFnResults:
+    results: Dict[str, List[int]]
+
+
+def evaluate_tp_tn_fp_fn(model, val_set, name):
+    """Val set's batch size is assumed to be 1."""
+    res = defaultdict(lambda: np.array([0, 0, 0, 0], dtype="int"))
+
+    for i, (X, y_true) in enumerate(val_set, start=1):
+        if i == 501:
+            break
+        y_pred = model.predict_on_batch(X)[0]
+        y_true = y_true[0]
+        y_pred_argmax = tf.argmax(y_pred, axis=-1)
+        y_true_argmax = tf.argmax(y_true, axis=-1)
+
+        for idx in range(NUM_CLASSES + 1):
+            res[str(idx)] += calculate_tp_tn_fp_fn_for_class(y_pred_argmax, y_true_argmax, idx)
+
+    res = {k: list(v) for (k, v) in res.items()}
+    res = TpTnFpFnResults(results=res)
+
+    EVALUATION_DIR.mkdir(parents=True, exist_ok=True)
+    with open(EVALUATION_DIR / f"{name}_tp_tn_fp_fn.json", "w") as f:
+        dump(dc.asdict(res), f, default=str)
+
+    return res
