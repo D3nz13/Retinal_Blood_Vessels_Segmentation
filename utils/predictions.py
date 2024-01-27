@@ -101,13 +101,13 @@ def get_dataset_generators(
 
 
 def calculate_tp_tn_fp_fn_for_class(y_pred_argmax, y_true_argmax, class_idx):
-    X_pred_argmax_class = y_pred_argmax == class_idx
+    y_pred_argmax_class = y_pred_argmax == class_idx
     y_true_argmax_class = y_true_argmax == class_idx
 
-    tp = np.sum(X_pred_argmax_class & y_true_argmax_class)
-    tn = np.sum(~X_pred_argmax_class & ~y_true_argmax_class)
-    fp = np.sum(X_pred_argmax_class & ~y_true_argmax_class)
-    fn = np.sum(~X_pred_argmax_class & y_true_argmax_class)
+    tp = np.sum(y_pred_argmax_class & y_true_argmax_class)
+    tn = np.sum(~y_pred_argmax_class & ~y_true_argmax_class)
+    fp = np.sum(y_pred_argmax_class & ~y_true_argmax_class)
+    fn = np.sum(~y_pred_argmax_class & y_true_argmax_class)
 
     return np.array([tp, tn, fp, fn])
 
